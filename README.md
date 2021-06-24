@@ -4,7 +4,7 @@ I have made this project because I wanted to implement a simple physics engine i
 a little game on HTML5 canvas. I was inspired by _The coding train_ Youtube channel
 and [this playlist](https://www.youtube.com/watch?v=70MQ-FugwbI&list=PLRqwX-V7Uu6ZV4yEcW3uDwOgGXKUUsPOM).
 
-# Goal
+## Goal
 
 The goal of this project is to create a functional multiplayer game with basic
 physical laws.
