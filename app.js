@@ -1,4 +1,4 @@
-let img, game, player, ball, goal_right, goal_left, scorer;
+let game, player, ball, goal_right, goal_left, scorer;
 
 class Player {
   constructor(x, y) {
@@ -164,10 +164,6 @@ class Game {
   }
 }
 
-function preload() {
-  img = loadImage("./football-pitch.png");
-}
-
 function setup() {
   createCanvas(800, 400);
   game = new Game();
@@ -181,7 +177,6 @@ function setup() {
 function draw() {
   background(53, 99, 22);
   translate(width / 2, height / 2);
-  image(img, -400, -200);
   game.render();
   game.listenForPlayerAndBallTouch();
   ball.applyAirResistance();
