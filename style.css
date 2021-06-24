@@ -1,0 +1,40 @@
+* {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  font-size: 100%;
+  box-sizing: border-box;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #141811;
+}
+
+.score {
+  top: 100px;
+  right: 0;
+  left: 0;
+  width: 100px;
+  margin-bottom: 20px;
+  padding: 20px;
+  font-size: 20px;
+  display: flex;
+  background-color: rgb(255, 255, 255);
+  justify-content: center;
+  align-items: center;
+}
+
+canvas {
+  border-radius: 10px;
+}
+
+canvas.goal {
+  border: 3px solid rgb(30, 177, 67);
+}
