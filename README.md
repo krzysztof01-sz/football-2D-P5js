@@ -19,3 +19,7 @@ physical laws.
 - clone this repository to your machine
 - go to the main folder
 - run index.html file
+
+## Screenshots
+
+![Game view](https://github.com/krzysztof01-sz/football-2D-P5js/blob/main/preview.png)
