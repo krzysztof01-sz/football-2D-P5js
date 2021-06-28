@@ -171,9 +171,11 @@ class Scorer {
     this.displayScore();
     this.switchBorderLight();
     setTimeout(() => {
-      const xCoord = player.isRed() ? -100 : 100;
+      players.forEach((player) => {
+        const xCoord = player.isRed() ? -100 : 100;
+        player.reset({ x: xCoord, y: 0 });
+      });
 
-      players.forEach((player) => player.reset({ x: xCoord, y: 0 }));
       ball.reset();
       this.switchBorderLight();
     }, 1000);
