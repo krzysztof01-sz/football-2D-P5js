@@ -1,187 +1,268 @@
-let game, player, ball, goal_right, goal_left, scorer;
+let game,
+  players = [],
+  goals = [],
+  ball,
+  scorer;
+
+const colors = {
+  pitch: "#356316",
+  redTeam: "#e32020",
+  blueTeam: "#3e24e3",
+  light: "#e6e6e6",
+  dark: "#000",
+};
+
+const KEY_CODES = {
+  space: 32,
+  a: 65,
+  d: 68,
+  s: 83,
+  w: 87,
+  x: 88,
+};
 
 class Player {
-  constructor(x, y) {
-    this.speed = 2;
-    this.size = 40;
-    this.mass = 1;
-    this.air_resitance_scalar = 120;
+  constructor({ x, y }, id) {
     this.pos = createVector(x, y);
     this.vel = createVector(0, 0);
+    this.id = id;
+    this.size = 40;
+    this.mass = 10;
+    this.borderWidth = 2;
+    this.turningDynamic = 0.2;
   }
-  reset() {
-    this.pos.x = -100;
-    this.pos.y = 0;
+
+  reset({ x, y }) {
+    this.pos.x = x;
+    this.pos.y = y;
     this.vel = createVector(0, 0);
   }
-  draw() {
-    fill(200);
-    strokeWeight(2);
-    stroke(keyIsDown(88) ? 230 : 0);
-    ellipse(this.pos.x, this.pos.y, this.size);
-    stroke(0);
-    strokeWeight(1);
+
+  getPlayerColor() {
+    return this.isRed() ? colors.redTeam : colors.blueTeam;
   }
-  keepOnPitch() {
+
+  isRed() {
+    return this.id === 1;
+  }
+
+  isBlue() {
+    return this.id === 2;
+  }
+
+  draw() {
+    fill(this.getPlayerColor());
+    strokeWeight(this.borderWidth);
+    stroke(
+      (this.isRed() && keyIsDown(KEY_CODES.x)) || (this.isBlue() && keyIsDown(KEY_CODES.space)) ? colors.light : colors.dark,
+    );
+    ellipse(this.pos.x, this.pos.y, this.size);
+    stroke(colors.dark);
+  }
+
+  listenOnBorderTouch() {
     if (this.pos.x > 380) this.pos.x = 380;
     if (this.pos.x < -380) this.pos.x = -380;
     if (this.pos.y > 180) this.pos.y = 180;
     if (this.pos.y < -180) this.pos.y = -180;
   }
+
   control() {
-    if (keyIsDown(LEFT_ARROW)) this.vel.add(createVector(-0.2, 0));
-    if (keyIsDown(RIGHT_ARROW)) this.vel.add(createVector(0.2, 0));
-    if (keyIsDown(UP_ARROW)) this.vel.add(createVector(0, -0.2));
-    if (keyIsDown(DOWN_ARROW)) this.vel.add(createVector(0, 0.2));
-    this.vel.limit(2);
+    if (this.isRed()) {
+      if (keyIsDown(KEY_CODES.w)) this.vel.add(createVector(0, -this.turningDynamic));
+      if (keyIsDown(KEY_CODES.s)) this.vel.add(createVector(0, this.turningDynamic));
+      if (keyIsDown(KEY_CODES.a)) this.vel.add(createVector(-this.turningDynamic, 0));
+      if (keyIsDown(KEY_CODES.d)) this.vel.add(createVector(this.turningDynamic, 0));
+      this.vel.limit(2);
+    } else {
+      if (keyIsDown(UP_ARROW)) this.vel.add(createVector(0, -this.turningDynamic));
+      if (keyIsDown(DOWN_ARROW)) this.vel.add(createVector(0, this.turningDynamic));
+      if (keyIsDown(LEFT_ARROW)) this.vel.add(createVector(-this.turningDynamic, 0));
+      if (keyIsDown(RIGHT_ARROW)) this.vel.add(createVector(this.turningDynamic, 0));
+      this.vel.limit(2);
+    }
   }
+
   render() {
     this.control();
-    this.keepOnPitch();
+    this.listenOnBorderTouch();
     this.draw();
   }
 }
 
 class Ball {
-  constructor(x, y) {
-    this.size = 20;
-    this.mass = 3;
-    this.air_resitance_scalar = 70;
+  constructor({ x, y }) {
     this.pos = createVector(x, y);
     this.vel = createVector(0, 0);
     this.acc = createVector(0, 0);
+    this.size = 20;
+    this.resistanceForce = 50;
   }
+
+  addSpeed() {
+    this.vel.limit(7);
+  }
+
+  keepCurrentSpeed() {
+    this.vel.limit(1);
+  }
+
+  kick() {
+    this.pos.add(this.vel);
+  }
+
   reset() {
     this.pos.x = 0;
     this.pos.y = 0;
     this.vel = createVector(0, 0);
     this.acc = createVector(0, 0);
   }
+
   applyAirResistance() {
-    this.air_resitance_v = createVector(this.vel.x / this.air_resitance_scalar, this.vel.y / this.air_resitance_scalar);
+    this.air_resitance_v = createVector(this.vel.x / this.resistanceForce, this.vel.y / this.resistanceForce);
     this.vel.sub(this.air_resitance_v);
   }
+
   handleBounce() {
-    if (this.pos.x >= 380 || this.pos.x <= -380) {
+    const ballTouchesHorizontalBorders = this.pos.x >= 380 || this.pos.x <= -380;
+    const ballTouchesVerticalBorders = this.pos.y >= 180 || this.pos.y <= -180;
+
+    if (ballTouchesHorizontalBorders) {
       if (this.pos.x > 380) this.pos.x = 380;
       if (this.pos.x < -380) this.pos.x = -380;
       this.vel.x = this.vel.x * -1;
     }
-    if (this.pos.y >= 180 || this.pos.y <= -180) {
+
+    if (ballTouchesVerticalBorders) {
       if (this.pos.y > 180) this.pos.y = 180;
       if (this.pos.y < -180) this.pos.y = -180;
       this.vel.y = this.vel.y * -1;
     }
   }
+
   render() {
     this.handleBounce();
-    fill(200);
+    fill(colors.light);
     ellipse(this.pos.x, this.pos.y, this.size);
   }
 }
 
 class Goal {
-  constructor(x, y, width) {
-    this.size = 20;
+  constructor({ x, y, width }) {
     this.pos = createVector(x, y);
     this.width = width;
+    this.size = 20;
   }
+
   render() {
+    fill(colors.light);
     ellipse(this.pos.x, this.pos.y, this.size);
     ellipse(this.pos.x, this.pos.y - this.width, this.size);
   }
 }
 
 class Scorer {
-  constructor(score_A, score_B) {
-    this.score_A = score_A;
-    this.score_B = score_B;
+  constructor(redTeamPoints, blueTeamPoints) {
+    this.redTeamPoints = redTeamPoints;
+    this.blueTeamPoints = blueTeamPoints;
   }
 
-  listenForAGoal() {
-    if (ball.pos.x > 380 && ball.pos.y > -100 && ball.pos.y < 100) {
-      this.addPointForTeamA();
-      this.displayScore();
-      document.querySelector("canvas").classList.toggle("goal");
-      setTimeout(() => {
-        player.reset();
-        ball.reset();
-        document.querySelector("canvas").classList.toggle("goal");
-      }, 1000);
+  handleGoal() {
+    this.displayScore();
+    this.switchBorderLight();
+    setTimeout(() => {
+      players.forEach((player) => player.reset({ x: player.id === 1 ? -100 : 100, y: 0 }));
+      ball.reset();
+      this.switchBorderLight();
+    }, 1000);
+  }
+
+  listenForGoals() {
+    const isGoalForRed = ball.pos.x > 380 && ball.pos.y > -100 && ball.pos.y < 100;
+    const isGoalForBlue = ball.pos.x < -380 && ball.pos.y > -100 && ball.pos.y < 100;
+
+    if (isGoalForRed) {
+      this.addPointForRedTeam();
+      this.handleGoal();
     }
-    if (ball.pos.x < -380 && ball.pos.y > -100 && ball.pos.y < 100) {
-      this.addPointForTeamB();
-      this.displayScore();
-      document.querySelector("canvas").classList.toggle("goal");
-      setTimeout(() => {
-        player.reset();
-        ball.reset();
-        document.querySelector("canvas").classList.toggle("goal");
-      }, 1000);
+
+    if (isGoalForBlue) {
+      this.addPointForBlueTeam();
+      this.handleGoal();
     }
+  }
+
+  switchBorderLight() {
+    document.querySelector("canvas").classList.toggle("goal");
   }
 
   displayScore() {
-    document.querySelector(".score").innerText = `${this.score_A}:${this.score_B}`;
+    document.querySelector(".score").innerText = `${this.redTeamPoints}:${this.blueTeamPoints}`;
   }
 
-  addPointForTeamA() {
-    this.score_A++;
+  addPointForRedTeam() {
+    this.redTeamPoints++;
   }
 
-  addPointForTeamB() {
-    this.score_B++;
-  }
-
-  resetResult() {
-    this.score_A = 0;
-    this.score_B = 0;
+  addPointForBlueTeam() {
+    this.blueTeamPoints++;
   }
 }
 
 class Game {
   render() {
-    player.render();
+    players.forEach((player) => player.render());
+    goals.forEach((goal) => goal.render());
     ball.render();
-    goal_right.render();
-    goal_left.render();
   }
-  listenForPlayerAndBallTouch() {
-    let player_ball_vector = p5.Vector.sub(ball.pos, player.pos);
-    let player_ball_distance = player_ball_vector.mag();
 
-    // when player has a contact with ball
-    if (player_ball_distance <= player.size / 2 + ball.size / 2 + 1) {
-      ball.acc = player_ball_vector.div(ball.mass);
-      ball.vel.add(ball.acc);
+  listenForBallContact() {
+    players.forEach((player) => {
+      let player_ball_vector = p5.Vector.sub(ball.pos, player.pos);
+      let player_ball_distance = player_ball_vector.mag();
 
-      const isXPressed = keyIsDown(88);
-      isXPressed ? ball.vel.limit(10) : ball.vel.limit(1);
+      const hasPlayerContactWithBall = player_ball_distance <= player.size / 2 + ball.size / 2;
 
-      ball.pos.add(ball.vel);
-    }
-    ball.pos.add(ball.vel);
+      if (hasPlayerContactWithBall) {
+        ball.acc = player_ball_vector;
+        ball.vel.add(ball.acc);
+
+        const redPlayerKickedBall = keyIsDown(KEY_CODES.x) && player.id === 1;
+        const bluePlayerKickedBall = keyIsDown(KEY_CODES.space) && player.id === 2;
+
+        const isBallKicked = redPlayerKickedBall || bluePlayerKickedBall;
+        isBallKicked ? ball.addSpeed() : ball.keepCurrentSpeed();
+      }
+
+      ball.kick();
+    });
   }
 }
 
 function setup() {
   createCanvas(800, 400);
+
   game = new Game();
-  player = new Player(-100, 0);
-  ball = new Ball(0, 0);
-  goal_right = new Goal(-380, 100, 200);
-  goal_left = new Goal(380, 100, 200);
+  players = [new Player({ x: -100, y: 0 }, 1), new Player({ x: 100, y: 0 }, 2)];
+  goals = [new Goal({ x: -380, y: 100, width: 200 }), new Goal({ x: 380, y: 100, width: 200 })];
+  ball = new Ball({ x: 0, y: 0 });
   scorer = new Scorer(0, 0);
 }
 
+const playerFrictionForce = 20;
+
 function draw() {
-  background(53, 99, 22);
+  background(colors.pitch);
   translate(width / 2, height / 2);
+
   game.render();
-  game.listenForPlayerAndBallTouch();
+  game.listenForBallContact();
+  scorer.listenForGoals();
   ball.applyAirResistance();
-  scorer.listenForAGoal();
-  player.slow_v = createVector(player.vel.x / 20, player.vel.y / 20);
-  player.vel.sub(player.slow_v);
-  player.pos.add(player.vel);
+
+  players.forEach((player) => {
+    player.friction = createVector(player.vel.x / playerFrictionForce, player.vel.y / playerFrictionForce);
+    player.vel.sub(player.friction);
+    player.pos.add(player.vel);
+  });
 }
